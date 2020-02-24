@@ -1,0 +1,40 @@
+2020-02-22 13:17:55,154 - train - INFO - GraphNeuralNet(
+  (edge_update): GRU(16, 32, batch_first=True)
+  (path_update): GRU(32, 16, batch_first=True)
+  (fc1): Linear(in_features=16, out_features=64, bias=True)
+  (fc2): Linear(in_features=64, out_features=64, bias=True)
+  (fc3): Linear(in_features=64, out_features=1, bias=True)
+  (dropout): Dropout(p=0.5, inplace=False)
+)
+Trainable parameters: 12513
+2020-02-23 01:06:17,143 - trainer - INFO -     epoch          : 1
+2020-02-23 01:06:17,156 - trainer - INFO -     loss           : 0.13501529289401004
+2020-02-23 01:06:17,156 - trainer - INFO -     relative_error : inf
+2020-02-23 01:06:17,156 - trainer - INFO -     pearson_correlation: 0.9416719675064087
+2020-02-23 01:06:17,156 - trainer - INFO -     absolute_error : 0.18021708726882935
+2020-02-23 01:06:17,157 - trainer - INFO -     val_loss       : 0.07748068297702458
+2020-02-23 01:06:17,157 - trainer - INFO -     val_relative_error: inf
+2020-02-23 01:06:17,157 - trainer - INFO -     val_pearson_correlation: 0.9733448028564453
+2020-02-23 01:06:17,157 - trainer - INFO -     val_absolute_error: 0.15431365370750427
+2020-02-23 01:06:17,370 - trainer - INFO - Saving checkpoint: saved/models/GraphNN/0222_131400/checkpoint-epoch1.pth ...
+2020-02-23 01:06:17,378 - trainer - INFO - Saving current best: model_best.pth ...
+2020-02-23 13:00:12,983 - trainer - INFO -     epoch          : 2
+2020-02-23 13:00:12,983 - trainer - INFO -     loss           : 0.11427315000860853
+2020-02-23 13:00:12,983 - trainer - INFO -     relative_error : inf
+2020-02-23 13:00:12,983 - trainer - INFO -     pearson_correlation: 0.954400360584259
+2020-02-23 13:00:12,984 - trainer - INFO -     absolute_error : 0.1649806797504425
+2020-02-23 13:00:12,984 - trainer - INFO -     val_loss       : 0.1010864678194486
+2020-02-23 13:00:12,984 - trainer - INFO -     val_relative_error: inf
+2020-02-23 13:00:12,984 - trainer - INFO -     val_pearson_correlation: 0.9708899259567261
+2020-02-23 13:00:12,984 - trainer - INFO -     val_absolute_error: 0.1447547972202301
+2020-02-23 13:00:12,987 - trainer - INFO - Saving checkpoint: saved/models/GraphNN/0222_131400/checkpoint-epoch2.pth ...
+2020-02-24 00:51:18,662 - trainer - INFO -     epoch          : 3
+2020-02-24 00:51:18,662 - trainer - INFO -     loss           : 0.11354813661925148
+2020-02-24 00:51:18,662 - trainer - INFO -     relative_error : inf
+2020-02-24 00:51:18,662 - trainer - INFO -     pearson_correlation: 0.9546888470649719
+2020-02-24 00:51:18,662 - trainer - INFO -     absolute_error : 0.16415618360042572
+2020-02-24 00:51:18,662 - trainer - INFO -     val_loss       : 0.1060970670178092
+2020-02-24 00:51:18,663 - trainer - INFO -     val_relative_error: inf
+2020-02-24 00:51:18,663 - trainer - INFO -     val_pearson_correlation: 0.9748448729515076
+2020-02-24 00:51:18,663 - trainer - INFO -     val_absolute_error: 0.13909368216991425
+2020-02-24 00:51:18,666 - trainer - INFO - Saving checkpoint: saved/models/GraphNN/0222_131400/checkpoint-epoch3.pth ...
