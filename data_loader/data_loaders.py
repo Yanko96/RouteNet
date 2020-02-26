@@ -38,7 +38,12 @@ class NetDataset(Dataset):
         self.dataset_name = base_folder
         self.dataset_dir=data_dir
         self.prediction_targets = prediction_targets
-        feature_path = os.path.join(data_dir, "delays" + base_folder.title())
+        if self.dataset_name == "nsfnet":
+            feature_path = os.path.join(data_dir, "delays" + base_folder.title())
+        elif self.dataset_name == "geant2":
+            feature_path = os.path.join(data_dir, "delays" + base_folder.title())
+        elif self.dataset_name == "GBN":
+            feature_path = os.path.join(data_dir, "delays")
         unchecked_feature_files = os.listdir(feature_path)
         self.feature_files = []
         ## find the feature files
@@ -63,7 +68,7 @@ class NetDataset(Dataset):
         self.feature_file_lengths = []
         ## loop over feature files, each one contains 500 data (simulations)
         for feature_file in self.feature_files:
-            feature_file = os.path.join(self.dataset_dir, "delays" + self.dataset_name.title(), feature_file)
+            feature_file = os.path.join(feature_path, feature_file)
             self.feature_file_lengths.append(len(open(feature_file, "r").readlines()))
             if self.dataset_name == "nsfnet":
                 routing_file = infer_routing_nsf3(feature_file)
@@ -72,6 +77,9 @@ class NetDataset(Dataset):
             elif self.dataset_name == "GBN":
                 routing_file = infer_routing_GBN(feature_file)
             ## reads the network topology and the routing schemes using the methods in utilities
+            if os.path.exists(routing_file) is False:
+                # self.feature_files.remove(feature_file)
+                continue 
             con,n = ned2lists(self.network_configuration_path)
             Global, TM_index, delay_index, jitter_index, drop_index = load(feature_file, n, True)
             R = load_routing(routing_file)
@@ -118,8 +126,8 @@ class NetDataset(Dataset):
 
     def __len__(self):
         length = 0
-        for feature_file in self.feature_files:
-            length += len(open(os.path.join(self.dataset_dir, "delays" + self.dataset_name.title(), feature_file), "r").readlines())
+        for TM in self.dataset_TM:
+            length += TM.shape[0]
         return length
 
     def __getitem__(self, idx):
@@ -160,10 +168,7 @@ class NetDataset(Dataset):
             targets_list.append(feature_dict[target])
             feature_dict.pop(target)
             feature_names.remove(target)
-        # if len(targets_list)>1:
         targets = np.stack(targets_list, axis=0)
-        # else:
-        #     targets = targets_list[0]
         feature_lists = [feature_dict[i] for i in feature_names]
         features = np.stack(feature_lists, axis=0)
         
