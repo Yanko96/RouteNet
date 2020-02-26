@@ -38,3 +38,13 @@ Trainable parameters: 12513
 2020-02-24 00:51:18,663 - trainer - INFO -     val_pearson_correlation: 0.9748448729515076
 2020-02-24 00:51:18,663 - trainer - INFO -     val_absolute_error: 0.13909368216991425
 2020-02-24 00:51:18,666 - trainer - INFO - Saving checkpoint: saved/models/GraphNN/0222_131400/checkpoint-epoch3.pth ...
+2020-02-24 12:43:04,009 - trainer - INFO -     epoch          : 4
+2020-02-24 12:43:04,009 - trainer - INFO -     loss           : 0.10664596367886821
+2020-02-24 12:43:04,009 - trainer - INFO -     relative_error : inf
+2020-02-24 12:43:04,010 - trainer - INFO -     pearson_correlation: 0.9560510516166687
+2020-02-24 12:43:04,010 - trainer - INFO -     absolute_error : 0.15463154017925262
+2020-02-24 12:43:04,010 - trainer - INFO -     val_loss       : 0.08070273720033427
+2020-02-24 12:43:04,010 - trainer - INFO -     val_relative_error: inf
+2020-02-24 12:43:04,010 - trainer - INFO -     val_pearson_correlation: 0.9733477830886841
+2020-02-24 12:43:04,010 - trainer - INFO -     val_absolute_error: 0.12126541137695312
+2020-02-24 12:43:04,013 - trainer - INFO - Saving checkpoint: saved/models/GraphNN/0222_131400/checkpoint-epoch4.pth ...
