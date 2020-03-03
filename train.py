@@ -8,6 +8,7 @@ import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
+from utils.util import weight_init
 
 
 # fix random seeds for reproducibility
@@ -26,6 +27,7 @@ def main(config):
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
+    model.apply(weight_init)
     logger.info(model)
 
     # get function handles of loss and metrics

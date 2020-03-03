@@ -1,0 +1,71 @@
+{
+    "name": "GraphNN",
+    "n_gpu": 1,
+    "arch": {
+        "type": "GraphNeuralNet",
+        "args": {
+            "link_state_dim": 32,
+            "path_state_dim": 32,
+            "fc1_dim": 256,
+            "fc2_dim": 256,
+            "output_dim": 1,
+            "dropout_rate": 0.5,
+            "T": 8
+        }
+    },
+    "data_loader": {
+        "type": "NetDataLoader",
+        "args": {
+            "data_dir": "/home/yangzhe/Documents/nsfnetbw",
+            "prediction_targets": [
+                "delay"
+            ],
+            "batch_size": 128,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 0,
+            "transform": {
+                "mean_TM": 0.17,
+                "std_TM": 0.13,
+                "mean_delay": 0.37,
+                "std_delay": 0.54,
+                "mean_link_capacity": 25.0,
+                "std_link_capacity": 40.0
+            }
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args": {
+            "lr": 0.01,
+            "weight_decay": 0.1
+        }
+    },
+    "loss": "mse_loss",
+    "metrics": [
+        "relative_error",
+        "pearson_correlation",
+        "absolute_error"
+    ],
+    "lr_scheduler": {
+        "type": "MultiStepLR",
+        "args": {
+            "milestones": [
+                3,
+                6,
+                9,
+                12
+            ],
+            "gamma": 0.4
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+        "save_dir": "./saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        "monitor": "min val_loss",
+        "early_stop": 10,
+        "tensorboard": true
+    }
+}

@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 def accuracy(output, target):
@@ -27,7 +28,7 @@ def relative_error(output, target):
 def absolute_error(output, target):
     with torch.no_grad():
         assert output.shape == target.shape
-        return torch.mean(torch.abs(output.clone().detach()-target.clone().detach()))
+        return F.l1_loss(output, target)
 
 def pearson_correlation(output, target):
     x = output.clone().detach()

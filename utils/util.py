@@ -95,14 +95,19 @@ def indices(lst, element):
 def collate_fn(batch):
     data, targets = zip(*batch)
     features = [datum[0] for datum in data]
-    link_indices = [datum[1] for datum in data]
-    path_indices = [datum[2] for datum in data]
-    sequ_indices = [datum[3] for datum in data]
-    n_paths = [datum[4] for datum in data]
-    n_links = [datum[5] for datum in data]
-    n_total = [datum[6] for datum in data]
-    paths = [datum[7] for datum in data]
-    features_tensor = torch.cat([torch.tensor(feature, dtype=torch.float32) for feature in features], dim=1).permute(1, 0)
+    link_capacities = [datum[1] for datum in data]
+    link_indices = [datum[2] for datum in data]
+    path_indices = [datum[3] for datum in data]
+    sequ_indices = [datum[4] for datum in data]
+    n_paths = [datum[5] for datum in data]
+    n_links = [datum[6] for datum in data]
+    n_total = [datum[7] for datum in data]
+    paths = [datum[8] for datum in data]
+    if len(features[0].shape)==1:
+        features_tensor = torch.cat([torch.tensor(feature, dtype=torch.float32) for feature in features]).unsqueeze(1)
+    else:
+        features_tensor = torch.cat([torch.tensor(feature, dtype=torch.float32) for feature in features], dim=1).permute(1, 0)
+    link_capacities_tensor = torch.cat([torch.tensor(link_capacity, dtype=torch.float32) for link_capacity in link_capacities])
     targets_tensor = torch.cat([torch.tensor(target, dtype=torch.float32) for target in targets], dim=1).permute(1, 0)
     list_sequ_indices = torch.tensor([item for sublist in sequ_indices for item in sublist])
     length = 0
@@ -133,7 +138,7 @@ def collate_fn(batch):
     for i in range(len(list_paths)):
         list_paths[i] = torch.tensor(list_paths[i], dtype=torch.long)
     
-    return (features_tensor, list_link_indices, list_path_indices, list_sequ_indices, n_paths, n_links, n_total, list_paths), targets_tensor
+    return (features_tensor, link_capacities_tensor, list_link_indices, list_path_indices, list_sequ_indices, n_paths, n_links, n_total, list_paths), targets_tensor
 
 def infer_routing_GBN(data_file):
     rf=re.sub(r'dGlobal_\d+_\d+_','Routing_', data_file).\
@@ -164,32 +169,57 @@ def pairwise(iterable):
     next(b, None)
     return zip(a, b)
 
+class NewParser:
+    netSize = 0
+    offsetDelay = 0
+    hasPacketGen = True
 
+    def __init__(self,netSize):
+        self.netSize = netSize
+        self.offsetDelay = netSize*netSize*3
+
+    def getBwPtr(self,src,dst):
+        return ((src*self.netSize + dst)*3)
+    def getGenPcktPtr(self,src,dst):
+        return ((src*self.netSize + dst)*3 + 1)
+    def getDropPcktPtr(self,src,dst):
+        return ((src*self.netSize + dst)*3 + 2)
+    def getDelayPtr(self,src,dst):
+        return (self.offsetDelay + (src*self.netSize + dst)*8)
+    def getJitterPtr(self,src,dst):
+        return (self.offsetDelay + (src*self.netSize + dst)*8 + 7)
+    
 def ned2lists(fname):
-    ## convert .ned file into network lists
-    ## returns a connectivity list l where l[n] shows the nodes that have connection with node n 
-    ## and number of nodes
     channels = []
+    link_cap = {}
     with open(fname) as f:
-        p = re.compile(r'\s+node(\d+).port\[(\d+)\]\s+<-->\s+Channel\s+<-->\s+node(\d+).port\[(\d+)\]')
+        p = re.compile(r'\s+node(\d+).port\[(\d+)\]\s+<-->\s+Channel(\d+)kbps+\s<-->\s+node(\d+).port\[(\d+)\]')
         for line in f:
             m=p.match(line)
             if m:
-                #print(line, m.groups())
-                channels.append(list(map(int,m.groups())))
+                auxList = []
+                it = 0
+                for elem in list(map(int,m.groups())):
+                    if it!=2:
+                        auxList.append(elem)
+                    it = it + 1
+                channels.append(auxList)
+                link_cap[(m.groups()[0])+':'+str(m.groups()[3])] = int(m.groups()[2])
+
     n=max(map(max, channels))+1
     connections = [{} for i in range(n)]
+    # Shape of connections[node][port] = node connected to
     for c in channels:
         connections[c[0]][c[1]]=c[2]
         connections[c[2]][c[3]]=c[0]
-    connections = [[v for k,v in sorted(con.items())] 
+    # Connections store an array of nodes where each node position correspond to
+    # another array of nodes that are connected to the current node
+    connections = [[v for k,v in sorted(con.items())]
                    for con in connections ]
-    return connections,n
+    return connections,n, link_cap
 
 
-def extract_links(n, connections):
-    ## A - Adjacency matrix
-    ## create a graph using networkX & A and get edges from built-in methods
+def extract_links(n, connections, link_cap):
     A = np.zeros((n,n))
 
     for a,c in zip(A,connections):
@@ -197,74 +227,19 @@ def extract_links(n, connections):
 
     G=nx.from_numpy_array(A, create_using=nx.DiGraph())
     edges=list(G.edges)
-    return edges
-
-def load_and_process(routing_file, data_file,edges,connections,n=15):
-    ## R is routing file 
-    ## features are the traffic data and labels are delays
-    R=np.loadtxt(routing_file, dtype=np.int32)
-    data = np.loadtxt(data_file)
-    traffic = np.reshape(data[:,0:n*n],(-1,n,n))   # bandwidth
-    delay = np.reshape(data[:,n*n:2*n*n],(-1,n,n))
-    #packet_loss = data[:,-1]
-    
-    paths=[]
-    features=[]
-    labels=[]
-
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                paths.append([edges.index(tup) for tup in pairwise(genPath(R,i,j,connections))])  # path generation according to R 
-                features.append(traffic[:,i,j])
-                labels.append(delay[:,i,j])
-    features = np.stack(features).T
-    labels = np.stack(labels).T
-    return paths,features,labels   # path bandwidth delay 
-
-def load(data_file,n, full=False):
-    ## read the delay .txt data in the dataset 
-    ## Output: Global: all the data in the dataset
-    ## TM_index: index of bandwith data n*n
-    ## delay_index: index of 7 link features
-    ## ... and so on
-    names=[]
-
-    TM_index=[]
-    delay_index=[]
-    if full:
-        jitter_index=[]
-        drop_index=[]
-
-    counter=0
-    for i in range(n):
-        for j in range(n):
-            names.append('a{}_{}'.format(i,j))
-            if i != j:
-                TM_index.append(counter)
-            counter += 1
-    for i in range(n):
-        for j in range(n):
-            for k in ['average', 'q10','q20','q50','q80','q90','variance']:
-                names.append('delay{}_{}_{}'.format(i,j,k))
-                if i != j and k == 'average':
-                    delay_index.append(counter)
-                if i != j and k == 'variance' and full:
-                    jitter_index.append(counter)
-                counter += 1
-    for i in range(n):
-        for j in range(n):
-            names.append('drop{}_{}'.format(i,j))
-            if full and i != j:
-                drop_index.append(counter)
-            counter += 1
-    names.append('empty')
-            
-    Global=pd.read_csv(data_file ,header=None, names=names,index_col=False)
-    if full:
-        return Global, TM_index, delay_index, jitter_index, drop_index
-    else:
-        return Global, TM_index, delay_index
+    capacities_links = []
+    # The edges 0-2 or 2-0 can exist. They are duplicated (up and down) and they must have same capacity.
+    for e in edges:
+        if str(e[0])+':'+str(e[1]) in link_cap:
+            capacity = link_cap[str(e[0])+':'+str(e[1])]
+            capacities_links.append(capacity)
+        elif str(e[1])+':'+str(e[0]) in link_cap:
+            capacity = link_cap[str(e[1])+':'+str(e[0])]
+            capacities_links.append(capacity)
+        else:
+            print("ERROR IN THE DATASET!")
+            exit()
+    return edges, capacities_links
 
 def load_routing(routing_file):
     ## just read the route matrix in numpy array 
@@ -273,16 +248,31 @@ def load_routing(routing_file):
     return R.values
    
 
-def make_paths(R,connections):
-    ## generate edge index for each path (n*n-n)
+def make_paths(R,connections, link_cap):
     n = R.shape[0]
-    edges = extract_links(n, connections)
+    edges, capacities_links = extract_links(n, connections, link_cap)
     paths=[]
     for i in range(n):
         for j in range(n):
             if i != j:
                 paths.append([edges.index(tup) for tup in pairwise(genPath(R,i,j,connections))])
-    return paths
+    return paths, capacities_links
+
+def get_corresponding_values(posParser, line, n, bws, delays, jitters):
+    bws.fill(0)
+    delays.fill(0)
+    jitters.fill(0)
+    it = 0
+    for i in range(n):
+        for j in range(n):
+            if i!=j:
+                delay = posParser.getDelayPtr(i, j)
+                jitter = posParser.getJitterPtr(i, j)
+                traffic = posParser.getBwPtr(i, j)
+                bws[it] = float(line[traffic])
+                delays[it] = float(line[delay])
+                jitters[it] = float(line[jitter])
+                it = it + 1
 
 def make_indices(paths):
     link_indices=[]        ## a long list that contains the same elements as paths but instead of a nested list 

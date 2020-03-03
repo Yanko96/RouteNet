@@ -1,0 +1,9 @@
+2020-02-25 20:56:37,601 - train - INFO - GraphNeuralNet(
+  (edge_update): GRU(32, 32, batch_first=True)
+  (path_update): GRU(32, 32, batch_first=True)
+  (fc1): Linear(in_features=32, out_features=256, bias=True)
+  (fc2): Linear(in_features=256, out_features=256, bias=True)
+  (fc3): Linear(in_features=256, out_features=1, bias=True)
+  (dropout): Dropout(p=0.5, inplace=False)
+)
+Trainable parameters: 87169
