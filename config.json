@@ -31,9 +31,11 @@
     },
     "optimizer": {
         "type": "Adam",
-        "args":{
-            "lr": 0.001,
-            "weight_decay": 0.01
+        "args":{"params": [{"params": "net.edge_update.parameters()", "lr": 0.001},
+            {"params": "net.path_update.parameters()", "lr": 0.001},
+            {"params": "net.fc1.parameters()", "lr": 0.001, "weight_decay": 0.1},
+            {"params": "net.fc2.parameters()", "lr": 0.001, "weight_decay": 0.1},
+            {"params": "net.fc3.parameters()", "lr": 0.001, "weight_decay": 0.01}]
         }
     },
     "loss": "mse_loss",

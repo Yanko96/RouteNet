@@ -40,12 +40,7 @@ class NetDataset(Dataset):
         self.dataset_name = base_folder
         self.dataset_dir=data_dir
         self.prediction_targets = prediction_targets
-        unchecked_feature_files = os.listdir(data_dir)
-        self.feature_files = []
-        ## find the feature files
-        for feature_file in unchecked_feature_files:
-            if feature_file.endswith(".tar.gz"):
-                self.feature_files.append(feature_file)
+        self.feature_folders = [os.path.join(self.dataset_dir, name) for name in os.listdir(self.dataset_dir) if os.path.isdir(os.path.join(self.dataset_dir, name))]
         ## Network configuration path
         self.network_configuration_path = os.path.join(data_dir, "Network_" + base_folder + ".ned")
         self.transform = transform
@@ -61,13 +56,9 @@ class NetDataset(Dataset):
         self.dataset_n_links = []
         self.dataset_n_total = []
         self.dataset_paths = []
-        for feature_file in self.feature_files:
-            tar = tarfile.open(os.path.join(self.dataset_dir,feature_file), "r:gz")
-            for member in tar.getmembers():
-                if member.name.split("/")[-1] == "simulationResults.txt":
-                    delay_file = tar.extractfile(member.name)
-                if member.name.split("/")[-1] == "Routing.txt":
-                    routing_file = tar.extractfile(member.name)
+        for feature_file in self.feature_folders:
+            delay_file = open(os.path.join(feature_file, "simulationResults.txt"), "r").readlines()
+            routing_file = os.path.join(feature_file, "Routing.txt")
             con, n, link_cap = ned2lists(self.network_configuration_path)
             posParser = NewParser(n)
             R = load_routing(routing_file)
@@ -82,7 +73,8 @@ class NetDataset(Dataset):
             ds_ = []
             js_ = []
             for line in delay_file:
-                line = line.decode().split(',')
+                # line = line.decode().split(',')
+                line = line.rstrip('\n').split(',')
                 get_corresponding_values(posParser, line, n, a, d, j)
                 as_.append(a)
                 ds_.append(d)

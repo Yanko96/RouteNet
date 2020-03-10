@@ -35,8 +35,14 @@ def main(config):
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+    # trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    # optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+    # optimizer = config.init_obj('optimizer', torch.optim)
+    optimizer = torch.optim.Adam([{"params": model.edge_update.parameters(), "lr": 0.001},
+    {"params": model.path_update.parameters(), "lr": 0.001},
+    {"params": model.fc1.parameters(), "lr": 0.001, "weight_decay": 0.1},
+    {"params": model.fc2.parameters(), "lr": 0.001, "weight_decay": 0.1},
+    {"params": model.fc3.parameters(), "lr": 0.001, "weight_decay": 0.01}])
 
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 

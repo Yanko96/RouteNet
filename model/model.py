@@ -23,6 +23,7 @@ class GraphNeuralNet(BaseModel):
         ## initialization of the path and link hiddent states
         device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
         features, link_capacities, list_link_indices, list_path_indices, list_sequ_indices, n_paths, n_links, n_total, paths = x
+        n_links_in_paths = torch.tensor([path.shape[0] for path in paths]).to(device)
         batch_size, feature_dim = features.shape
         path_state = torch.zeros(size=(batch_size, self.path_state_dim)).to(device)
         link_state = torch.zeros(size=(torch.sum(n_links), self.link_state_dim)).to(device)
@@ -32,8 +33,9 @@ class GraphNeuralNet(BaseModel):
         for _ in range(self.T):
             flat_list = [torch.index_select(link_state, 0, path, out=None).to(device) for path in paths]
             padded_sequence = pad_sequence(flat_list, batch_first=True)
-            message, path_hidden_states = self.path_update(padded_sequence, path_state.unsqueeze(0))
-            path_state = path_hidden_states.squeeze()
+            message, _ = self.path_update(padded_sequence, path_state.unsqueeze(0))
+            # path_state = path_hidden_states.squeeze()
+            path_state = message[torch.arange(torch.sum(n_paths)), n_links_in_paths - 1, :]
             message_accumulating = message[[list_path_indices, list_sequ_indices]]
             message_passing = torch.zeros(size=(torch.sum(n_links), self.path_state_dim)).to(device)
             message_passing = message_passing.index_add(0, list_link_indices, message_accumulating)
